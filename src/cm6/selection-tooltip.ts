@@ -25,18 +25,7 @@ function getSelectionTooltip(state: EditorState): Tooltip | null {
       });
 
       dom.appendChild(btn);
-      return {
-        dom,
-        mount(view: EditorView) {
-          const wrapper = dom.parentElement;
-          if (wrapper) {
-            wrapper.style.setProperty("background", "none", "important");
-            wrapper.style.setProperty("border", "none", "important");
-            wrapper.style.setProperty("box-shadow", "none", "important");
-            wrapper.style.setProperty("padding", "0", "important");
-          }
-        },
-      };
+      return { dom };
     },
   };
 }

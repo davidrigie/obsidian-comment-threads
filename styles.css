@@ -332,27 +332,18 @@
 
 /* --- Selection tooltip --- */
 
-.ct-tooltip-wrapper {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
 .ct-selection-tooltip-btn {
-  padding: 5px 12px;
+  padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-on-accent);
-  background: var(--interactive-accent);
+  color: var(--text-normal);
+  background: transparent;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: background 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .ct-selection-tooltip-btn:hover {
-  background: var(--interactive-accent-hover);
+  color: var(--text-accent);
 }
