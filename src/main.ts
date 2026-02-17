@@ -15,6 +15,7 @@ import {
   VIEW_TYPE_COMMENT_THREADS,
 } from "./views/comments-panel";
 import { CommentThreadsSettingTab } from "./settings";
+import { EditorView } from "@codemirror/view";
 import { commentDecorationPlugin } from "./cm6/comment-decoration";
 import { commentPostProcessor } from "./post-processor";
 import type { CommentThreadsSettings } from "./types";
@@ -43,8 +44,25 @@ export default class CommentThreadsPlugin extends Plugin {
       return view;
     });
 
-    // Register CM6 extension for live preview
+    // Register CM6 extensions for live preview
     this.registerEditorExtension(commentDecorationPlugin);
+    this.registerEditorExtension(
+      EditorView.domEventHandlers({
+        click: (event) => {
+          const target = event.target as HTMLElement;
+          const highlight =
+            target.closest(".ct-comment-highlight") as HTMLElement | null;
+          const badge =
+            target.closest(".ct-comment-badge") as HTMLElement | null;
+          const commentId =
+            highlight?.dataset.commentId ?? badge?.dataset.commentId;
+          if (commentId) {
+            this.setActiveComment(commentId);
+            this.activatePanel();
+          }
+        },
+      })
+    );
 
     // Register post-processor for reading view
     this.registerMarkdownPostProcessor((el, ctx) => {
