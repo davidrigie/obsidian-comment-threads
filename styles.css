@@ -332,11 +332,11 @@
 
 /* --- Selection tooltip --- */
 
-.cm-tooltip:has(.ct-selection-tooltip) {
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+.ct-tooltip-wrapper {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .ct-selection-tooltip-btn {

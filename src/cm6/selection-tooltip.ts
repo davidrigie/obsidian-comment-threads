@@ -25,7 +25,13 @@ function getSelectionTooltip(state: EditorState): Tooltip | null {
       });
 
       dom.appendChild(btn);
-      return { dom };
+      return {
+        dom,
+        mount(view: EditorView) {
+          // Add class to the CM6 tooltip wrapper so we can strip its chrome
+          dom.parentElement?.classList.add("ct-tooltip-wrapper");
+        },
+      };
     },
   };
 }
