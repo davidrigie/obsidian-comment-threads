@@ -256,27 +256,29 @@ export default class CommentThreadsPlugin extends Plugin {
 
   // --- Comment deletion ---
 
-  private deleteComment(commentId: string): void {
-    // Strip markers from the editor
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (view) {
-      const editor = view.editor;
-      const content = editor.getValue();
-      const re = new RegExp(MARKER_RE.source, "g");
-      let newContent = content;
-      let match;
-      // Find the specific marker for this comment and replace with just the inner text
-      while ((match = re.exec(content)) !== null) {
-        if (`c${match[2]}` === commentId) {
-          newContent =
-            content.slice(0, match.index) +
-            match[1] +
-            content.slice(match.index + match[0].length);
-          break;
+  private async deleteComment(commentId: string): Promise<void> {
+    // Strip markers from the file via Vault API (works regardless of focused view)
+    if (this.currentFilePath) {
+      const file = this.app.vault.getFileByPath(this.currentFilePath);
+      if (file) {
+        const content = await this.app.vault.read(file);
+        const re = new RegExp(MARKER_RE.source, "g");
+        let newContent = content;
+        let match;
+        while ((match = re.exec(content)) !== null) {
+          if (`c${match[2]}` === commentId) {
+            newContent =
+              content.slice(0, match.index) +
+              match[1]! +
+              content.slice(match.index + match[0].length);
+            break;
+          }
         }
-      }
-      if (newContent !== content) {
-        editor.setValue(newContent);
+        if (newContent !== content) {
+          this.saving = true;
+          await this.app.vault.modify(file, newContent);
+          this.saving = false;
+        }
       }
     }
 
