@@ -165,6 +165,27 @@ export default class CommentThreadsPlugin extends Plugin {
       })
     );
 
+    // Protocol handler for obsidian://comment-threads?file=...&comment=...
+    this.registerObsidianProtocolHandler("comment-threads", async (params) => {
+      const filePath = params.file;
+      const commentId = params.comment;
+      if (!filePath) return;
+
+      const file = this.app.vault.getFileByPath(filePath);
+      if (!file) return;
+
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+      this.currentFilePath = file.path;
+      await this.fileIO.loadComments(file.path);
+
+      if (commentId) {
+        this.scrollToComment(commentId);
+        this.setActiveComment(commentId);
+        this.activatePanel();
+      }
+    });
+
     // Settings tab
     this.addSettingTab(new CommentThreadsSettingTab(this.app, this));
 

@@ -18,7 +18,8 @@ function formatDate(iso: string): string {
 
 export function buildCompanionMarkdown(
   fileName: string,
-  commentsFile: CommentsFile
+  commentsFile: CommentsFile,
+  mdPath?: string
 ): string {
   const lines: string[] = [];
 
@@ -45,11 +46,18 @@ export function buildCompanionMarkdown(
     if (!thread) continue;
 
     const anchorText = thread.anchorText || "(no anchor)";
-    let displayText = anchorText;
+    let displayText = anchorText.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+    // Escape characters that break markdown link syntax
+    displayText = displayText.replace(/[\[\]()]/g, "\\$&");
     if (displayText.length > 80) displayText = displayText.slice(0, 80) + "...";
 
     lines.push("");
-    lines.push(`> **[${id}]** on "${displayText}"`);
+    if (mdPath) {
+      const uri = `obsidian://comment-threads?file=${encodeURIComponent(mdPath)}&comment=${id}`;
+      lines.push(`> **[${id}]** on "[${displayText}](${uri})"`);
+    } else {
+      lines.push(`> **[${id}]** on "${displayText}"`);
+    }
     lines.push("");
 
     for (const msg of thread.thread) {

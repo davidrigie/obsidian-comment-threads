@@ -64,7 +64,7 @@ export class CommentFileIO {
     }
 
     const fileName = mdPath.split("/").pop() || "document.md";
-    const companion = buildCompanionMarkdown(fileName, data);
+    const companion = buildCompanionMarkdown(fileName, data, mdPath);
 
     const existing = this.vault.getFileByPath(companionPath);
     if (existing) {

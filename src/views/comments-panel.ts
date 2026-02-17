@@ -75,6 +75,10 @@ export class CommentThreadsView extends ItemView {
 
   setCommentTexts(texts: Record<string, string>): void {
     this.commentTexts = texts;
+    // Skip re-render if user is typing in an input
+    if (this.contentEl.contains(document.activeElement) && document.activeElement instanceof HTMLInputElement) {
+      return;
+    }
     this.render();
   }
 
