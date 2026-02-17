@@ -81,6 +81,16 @@ export class CommentStore {
     this.notify();
   }
 
+  setAnchorText(commentId: string, text: string): void {
+    const thread = this.threads[commentId];
+    if (!thread) return;
+    this.threads = {
+      ...this.threads,
+      [commentId]: { ...thread, anchorText: text },
+    };
+    // No notify — this is a silent metadata update
+  }
+
   resolveThread(commentId: string, author: string): void {
     const thread = this.threads[commentId];
     if (!thread) return;

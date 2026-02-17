@@ -53,10 +53,7 @@ export class CommentFileIO {
     }
   }
 
-  async saveCompanion(
-    mdPath: string,
-    markdownContent: string
-  ): Promise<void> {
+  async saveCompanion(mdPath: string): Promise<void> {
     const companionPath = companionMdPath(mdPath);
     const data = this.store.getCommentsFile();
     const hasComments = Object.keys(data.comments).length > 0;
@@ -67,7 +64,7 @@ export class CommentFileIO {
     }
 
     const fileName = mdPath.split("/").pop() || "document.md";
-    const companion = buildCompanionMarkdown(fileName, markdownContent, data);
+    const companion = buildCompanionMarkdown(fileName, data);
 
     const existing = this.vault.getFileByPath(companionPath);
     if (existing) {

@@ -239,9 +239,10 @@ export default class CommentThreadsPlugin extends Plugin {
       if (file) {
         const content = await this.app.vault.read(file);
         this.updateCommentTexts(content);
-        if (this.settings.generateCompanion) {
-          await this.fileIO.saveCompanion(this.currentFilePath, content);
-        }
+      }
+
+      if (this.settings.generateCompanion) {
+        await this.fileIO.saveCompanion(this.currentFilePath);
       }
     } finally {
       this.saving = false;
@@ -293,6 +294,8 @@ export default class CommentThreadsPlugin extends Plugin {
     let match;
     while ((match = re.exec(content)) !== null) {
       if (`c${match[2]}` === commentId) {
+        // Preserve the anchor text before stripping
+        this.store.setAnchorText(commentId, match[1]!);
         newContent =
           content.slice(0, match.index) +
           match[1]! +
@@ -350,6 +353,8 @@ export default class CommentThreadsPlugin extends Plugin {
     while ((match = re.exec(content)) !== null) {
       const commentId = `c${match[2]}`;
       texts[commentId] = match[1]!;
+      // Keep anchorText in the store in sync
+      this.store.setAnchorText(commentId, match[1]!);
     }
 
     // Update the panel

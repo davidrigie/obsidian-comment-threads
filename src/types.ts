@@ -11,6 +11,7 @@ export interface CommentThread {
   resolvedBy?: string;
   resolvedAt?: string; // ISO 8601 UTC
   createdAt: string; // ISO 8601 UTC
+  anchorText?: string; // Preserved when markers are stripped
 }
 
 export interface CommentsFile {

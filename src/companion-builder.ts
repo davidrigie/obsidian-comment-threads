@@ -1,7 +1,5 @@
 import type { CommentsFile } from "./types";
 
-const MARKER_RE = /<mark>([\s\S]*?)<\/mark><sup>\[c(\d+)\]<\/sup>/g;
-
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return (
@@ -20,7 +18,6 @@ function formatDate(iso: string): string {
 
 export function buildCompanionMarkdown(
   fileName: string,
-  markdownContent: string,
   commentsFile: CommentsFile
 ): string {
   const lines: string[] = [];
@@ -33,35 +30,26 @@ export function buildCompanionMarkdown(
   lines.push("");
   lines.push("---");
 
-  // Extract anchors in document order
-  const anchors: { id: string; text: string }[] = [];
-  let match;
-  const re = new RegExp(MARKER_RE.source, "g");
-  while ((match = re.exec(markdownContent)) !== null) {
-    let text = match[1]!;
-    if (text.length > 80) text = text.slice(0, 80) + "...";
-    anchors.push({ id: `c${match[2]}`, text });
-  }
-
-  // Include unanchored threads (marker deleted but thread remains)
-  const anchoredIds = new Set(anchors.map((a) => a.id));
-  const allIds = Object.keys(commentsFile.comments);
-  const unanchored = allIds.filter((id) => !anchoredIds.has(id));
-
-  const orderedEntries = [
-    ...anchors.map((a) => ({ id: a.id, text: a.text })),
-    ...unanchored.map((id) => ({ id, text: "(unanchored)" })),
-  ];
+  // Sort thread IDs numerically
+  const threadIds = Object.keys(commentsFile.comments).sort((a, b) => {
+    const numA = parseInt(a.replace("c", ""), 10);
+    const numB = parseInt(b.replace("c", ""), 10);
+    return numA - numB;
+  });
 
   let resolvedCount = 0;
   let openCount = 0;
 
-  for (const entry of orderedEntries) {
-    const thread = commentsFile.comments[entry.id];
+  for (const id of threadIds) {
+    const thread = commentsFile.comments[id];
     if (!thread) continue;
 
+    const anchorText = thread.anchorText || "(no anchor)";
+    let displayText = anchorText;
+    if (displayText.length > 80) displayText = displayText.slice(0, 80) + "...";
+
     lines.push("");
-    lines.push(`> **[${entry.id}]** on "${entry.text}"`);
+    lines.push(`> **[${id}]** on "${displayText}"`);
     lines.push("");
 
     for (const msg of thread.thread) {

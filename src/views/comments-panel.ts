@@ -235,8 +235,8 @@ export class CommentThreadsView extends ItemView {
       }
     });
 
-    // Quoted text
-    const quotedText = this.commentTexts[commentId];
+    // Quoted text (live from markers, or preserved anchorText)
+    const quotedText = this.commentTexts[commentId] ?? thread.anchorText;
     if (quotedText) {
       const quote = el.createDiv({ cls: "ct-thread-quote" });
       const displayText =
