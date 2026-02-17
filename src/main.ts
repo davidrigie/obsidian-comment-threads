@@ -110,16 +110,8 @@ export default class CommentThreadsPlugin extends Plugin {
       callback: () => this.stripAllMarkers(),
     });
 
-    // Ribbon icon
+    // Ribbon icon — just toggles the panel
     this.addRibbonIcon("message-square", "Comment Threads", () => {
-      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-      if (view) {
-        const selection = view.editor.getSelection();
-        if (selection) {
-          this.createComment(view.editor);
-          return;
-        }
-      }
       this.togglePanel();
     });
 
