@@ -332,15 +332,15 @@
 
 /* --- Selection tooltip --- */
 
-.ct-selection-tooltip {
+.cm-tooltip:has(.ct-selection-tooltip) {
+  background: none;
+  border: none;
+  box-shadow: none;
   padding: 0;
 }
 
 .ct-selection-tooltip-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-on-accent);
@@ -349,6 +349,7 @@
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: background 0.15s ease;
 }
 
