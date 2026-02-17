@@ -15,6 +15,7 @@ export class CommentThreadsView extends ItemView {
   private getAuthor: () => string = () => "Anonymous";
   private onNavigateToComment: (commentId: string) => void = () => {};
   private onDeleteThread: (commentId: string) => void = () => {};
+  private onResolveThread: (commentId: string) => void = () => {};
   private pendingFocusCommentId: string | null = null;
 
   constructor(leaf: WorkspaceLeaf, store: CommentStore) {
@@ -44,6 +45,10 @@ export class CommentThreadsView extends ItemView {
 
   setOnDeleteThread(fn: (commentId: string) => void): void {
     this.onDeleteThread = fn;
+  }
+
+  setOnResolveThread(fn: (commentId: string) => void): void {
+    this.onResolveThread = fn;
   }
 
   focusCommentInput(commentId: string): void {
@@ -192,7 +197,7 @@ export class CommentThreadsView extends ItemView {
       });
       resolveBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        this.store.resolveThread(commentId, this.getAuthor());
+        this.onResolveThread(commentId);
       });
     } else {
       const unresolveBtn = actions.createEl("button", {

@@ -39,6 +39,7 @@ export default class CommentThreadsPlugin extends Plugin {
       view.setGetAuthor(() => this.getAuthor());
       view.setOnNavigateToComment((id) => this.scrollToComment(id));
       view.setOnDeleteThread((id) => this.deleteComment(id));
+      view.setOnResolveThread((id) => this.resolveComment(id));
       return view;
     });
 
@@ -254,36 +255,45 @@ export default class CommentThreadsPlugin extends Plugin {
     });
   }
 
+  // --- Marker stripping ---
+
+  private async stripMarkers(commentId: string): Promise<void> {
+    if (!this.currentFilePath) return;
+    const file = this.app.vault.getFileByPath(this.currentFilePath);
+    if (!file) return;
+
+    const content = await this.app.vault.read(file);
+    const re = new RegExp(MARKER_RE.source, "g");
+    let newContent = content;
+    let match;
+    while ((match = re.exec(content)) !== null) {
+      if (`c${match[2]}` === commentId) {
+        newContent =
+          content.slice(0, match.index) +
+          match[1]! +
+          content.slice(match.index + match[0].length);
+        break;
+      }
+    }
+    if (newContent !== content) {
+      this.saving = true;
+      await this.app.vault.modify(file, newContent);
+      this.saving = false;
+    }
+  }
+
   // --- Comment deletion ---
 
   private async deleteComment(commentId: string): Promise<void> {
-    // Strip markers from the file via Vault API (works regardless of focused view)
-    if (this.currentFilePath) {
-      const file = this.app.vault.getFileByPath(this.currentFilePath);
-      if (file) {
-        const content = await this.app.vault.read(file);
-        const re = new RegExp(MARKER_RE.source, "g");
-        let newContent = content;
-        let match;
-        while ((match = re.exec(content)) !== null) {
-          if (`c${match[2]}` === commentId) {
-            newContent =
-              content.slice(0, match.index) +
-              match[1]! +
-              content.slice(match.index + match[0].length);
-            break;
-          }
-        }
-        if (newContent !== content) {
-          this.saving = true;
-          await this.app.vault.modify(file, newContent);
-          this.saving = false;
-        }
-      }
-    }
-
-    // Remove from store
+    await this.stripMarkers(commentId);
     this.store.deleteThread(commentId);
+  }
+
+  // --- Comment resolution ---
+
+  private async resolveComment(commentId: string): Promise<void> {
+    await this.stripMarkers(commentId);
+    this.store.resolveThread(commentId, this.getAuthor());
   }
 
   // --- Comment navigation ---
