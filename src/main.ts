@@ -235,10 +235,11 @@ export default class CommentThreadsPlugin extends Plugin {
     try {
       await this.fileIO.saveComments(this.currentFilePath);
 
-      if (this.settings.generateCompanion) {
-        const file = this.app.vault.getFileByPath(this.currentFilePath);
-        if (file) {
-          const content = await this.app.vault.read(file);
+      const file = this.app.vault.getFileByPath(this.currentFilePath);
+      if (file) {
+        const content = await this.app.vault.read(file);
+        this.updateCommentTexts(content);
+        if (this.settings.generateCompanion) {
           await this.fileIO.saveCompanion(this.currentFilePath, content);
         }
       }
