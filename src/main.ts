@@ -363,9 +363,20 @@ export default class CommentThreadsPlugin extends Plugin {
   }
 
   private scrollToComment(commentId: string): void {
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (!view) return;
-    const editor = view.editor;
+    // Find the MarkdownView for the current file (can't use getActiveViewOfType
+    // because the sidebar panel may be focused instead)
+    let mdView: MarkdownView | null = null;
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      if (
+        leaf.view instanceof MarkdownView &&
+        leaf.view.file?.path === this.currentFilePath
+      ) {
+        mdView = leaf.view;
+      }
+    });
+    if (!mdView) return;
+
+    const editor = (mdView as MarkdownView).editor;
     const content = editor.getValue();
 
     const re = new RegExp(MARKER_RE.source, "g");
