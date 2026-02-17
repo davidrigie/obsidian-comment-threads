@@ -86,6 +86,12 @@ export default class CommentThreadsPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: "strip-all-markers",
+      name: "Strip all comment markers from current file",
+      callback: () => this.stripAllMarkers(),
+    });
+
     // Ribbon icon
     this.addRibbonIcon("message-square", "Comment Threads", () => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -279,6 +285,26 @@ export default class CommentThreadsPlugin extends Plugin {
       this.saving = true;
       await this.app.vault.modify(file, newContent);
       this.saving = false;
+    }
+  }
+
+  private async stripAllMarkers(): Promise<void> {
+    if (!this.currentFilePath) return;
+    const file = this.app.vault.getFileByPath(this.currentFilePath);
+    if (!file) return;
+
+    const content = await this.app.vault.read(file);
+    const newContent = content.replace(
+      new RegExp(MARKER_RE.source, "g"),
+      (_, text) => text as string
+    );
+    if (newContent !== content) {
+      this.saving = true;
+      await this.app.vault.modify(file, newContent);
+      this.saving = false;
+      new Notice("All comment markers stripped.");
+    } else {
+      new Notice("No comment markers found.");
     }
   }
 
