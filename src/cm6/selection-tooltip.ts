@@ -25,7 +25,18 @@ function getSelectionTooltip(state: EditorState): Tooltip | null {
       });
 
       dom.appendChild(btn);
-      return { dom };
+      return {
+        dom,
+        mount() {
+          // Walk up and strip border from all tooltip wrappers
+          let el: HTMLElement | null = dom.parentElement;
+          while (el && !el.classList.contains("cm-editor")) {
+            el.style.border = "none";
+            el.style.outline = "none";
+            el = el.parentElement;
+          }
+        },
+      };
     },
   };
 }
