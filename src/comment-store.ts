@@ -47,12 +47,16 @@ export class CommentStore {
     return `c${maxNum + 1}`;
   }
 
-  addThread(commentId: string, author: string, body: string): void {
+  addThread(commentId: string, author?: string, body?: string): void {
     const now = new Date().toISOString();
+    const messages =
+      author && body
+        ? [{ id: generateId(), author, timestamp: now, body }]
+        : [];
     this.threads = {
       ...this.threads,
       [commentId]: {
-        thread: [{ id: generateId(), author, timestamp: now, body }],
+        thread: messages,
         resolved: false,
         createdAt: now,
       },

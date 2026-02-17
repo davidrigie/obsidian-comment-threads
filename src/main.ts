@@ -3,7 +3,6 @@ import {
   MarkdownFileInfo,
   MarkdownView,
   Menu,
-  Modal,
   Notice,
   Plugin,
   TFile,
@@ -39,6 +38,7 @@ export default class CommentThreadsPlugin extends Plugin {
       const view = new CommentThreadsView(leaf, this.store);
       view.setGetAuthor(() => this.getAuthor());
       view.setOnNavigateToComment((id) => this.scrollToComment(id));
+      view.setOnDeleteThread((id) => this.deleteComment(id));
       return view;
     });
 
@@ -240,21 +240,48 @@ export default class CommentThreadsPlugin extends Plugin {
 
     const commentId = this.store.getNextCommentId();
 
-    // Show modal to enter comment body
-    new CommentInputModal(this.app, (body) => {
-      // Add the thread to the store
-      this.store.addThread(commentId, this.getAuthor(), body);
+    // Create empty thread in the store
+    this.store.addThread(commentId);
 
-      // Wrap selection with markers in the editor
-      const wrapped = `<mark>${selection}</mark><sup>[${commentId}]</sup>`;
-      editor.replaceSelection(wrapped);
+    // Wrap selection with markers in the editor
+    const wrapped = `<mark>${selection}</mark><sup>[${commentId}]</sup>`;
+    editor.replaceSelection(wrapped);
 
-      // Open panel and set active
-      this.setActiveComment(commentId);
-      this.activatePanel();
+    // Open panel, set active, and focus the input
+    this.setActiveComment(commentId);
+    this.activatePanel().then(() => {
+      this.focusPanelInput(commentId);
+    });
+  }
 
-      new Notice(`Comment ${commentId} added.`);
-    }).open();
+  // --- Comment deletion ---
+
+  private deleteComment(commentId: string): void {
+    // Strip markers from the editor
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (view) {
+      const editor = view.editor;
+      const content = editor.getValue();
+      const re = new RegExp(MARKER_RE.source, "g");
+      let newContent = content;
+      let match;
+      // Find the specific marker for this comment and replace with just the inner text
+      while ((match = re.exec(content)) !== null) {
+        if (`c${match[2]}` === commentId) {
+          newContent =
+            content.slice(0, match.index) +
+            match[1] +
+            content.slice(match.index + match[0].length);
+          break;
+        }
+      }
+      if (newContent !== content) {
+        editor.setValue(newContent);
+      }
+    }
+
+    // Remove from store
+    this.store.deleteThread(commentId);
   }
 
   // --- Comment navigation ---
@@ -329,6 +356,17 @@ export default class CommentThreadsPlugin extends Plugin {
 
   // --- Panel management ---
 
+  private focusPanelInput(commentId: string): void {
+    const leaves = this.app.workspace.getLeavesOfType(
+      VIEW_TYPE_COMMENT_THREADS
+    );
+    for (const leaf of leaves) {
+      if (leaf.view instanceof CommentThreadsView) {
+        leaf.view.focusCommentInput(commentId);
+      }
+    }
+  }
+
   private setActiveComment(commentId: string): void {
     const leaves = this.app.workspace.getLeavesOfType(
       VIEW_TYPE_COMMENT_THREADS
@@ -380,64 +418,5 @@ export default class CommentThreadsPlugin extends Plugin {
     } else {
       await this.activatePanel();
     }
-  }
-}
-
-/**
- * Simple modal for entering a comment body.
- */
-class CommentInputModal extends Modal {
-  private onSubmit: (body: string) => void;
-
-  constructor(app: import("obsidian").App, onSubmit: (body: string) => void) {
-    super(app);
-    this.onSubmit = onSubmit;
-  }
-
-  onOpen(): void {
-    const { contentEl } = this;
-    contentEl.createEl("h3", { text: "Add Comment" });
-
-    const input = contentEl.createEl("textarea", {
-      cls: "ct-comment-input-modal-textarea",
-      placeholder: "Enter your comment...",
-    });
-    input.rows = 3;
-    input.focus();
-
-    const btnContainer = contentEl.createDiv({
-      cls: "ct-comment-input-modal-buttons",
-    });
-
-    const submitBtn = btnContainer.createEl("button", {
-      text: "Add Comment",
-      cls: "mod-cta",
-    });
-    submitBtn.addEventListener("click", () => {
-      const body = input.value.trim();
-      if (body) {
-        this.onSubmit(body);
-        this.close();
-      }
-    });
-
-    const cancelBtn = btnContainer.createEl("button", { text: "Cancel" });
-    cancelBtn.addEventListener("click", () => this.close());
-
-    // Submit on Cmd/Ctrl+Enter
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        const body = input.value.trim();
-        if (body) {
-          this.onSubmit(body);
-          this.close();
-        }
-      }
-    });
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
   }
 }

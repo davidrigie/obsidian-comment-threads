@@ -14,6 +14,8 @@ export class CommentThreadsView extends ItemView {
   private unsubscribe: (() => void) | null = null;
   private getAuthor: () => string = () => "Anonymous";
   private onNavigateToComment: (commentId: string) => void = () => {};
+  private onDeleteThread: (commentId: string) => void = () => {};
+  private pendingFocusCommentId: string | null = null;
 
   constructor(leaf: WorkspaceLeaf, store: CommentStore) {
     super(leaf);
@@ -38,6 +40,15 @@ export class CommentThreadsView extends ItemView {
 
   setOnNavigateToComment(fn: (commentId: string) => void): void {
     this.onNavigateToComment = fn;
+  }
+
+  setOnDeleteThread(fn: (commentId: string) => void): void {
+    this.onDeleteThread = fn;
+  }
+
+  focusCommentInput(commentId: string): void {
+    this.pendingFocusCommentId = commentId;
+    this.render();
   }
 
   async onOpen(): Promise<void> {
@@ -205,7 +216,7 @@ export class CommentThreadsView extends ItemView {
     deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (deleteBtn.hasClass("ct-btn-confirm")) {
-        this.store.deleteThread(commentId);
+        this.onDeleteThread(commentId);
         if (deleteConfirmTimeout !== null) {
           window.clearTimeout(deleteConfirmTimeout);
         }
@@ -253,13 +264,14 @@ export class CommentThreadsView extends ItemView {
       msgEl.createEl("p", { cls: "ct-message-body", text: msg.body });
     }
 
-    // Reply input (only for open threads)
+    // Comment input (first message or reply)
     if (!thread.resolved) {
+      const hasMessages = thread.thread.length > 0;
       const replyContainer = el.createDiv({ cls: "ct-reply" });
       const replyInput = replyContainer.createEl("input", {
         cls: "ct-reply-input",
         type: "text",
-        placeholder: "Reply...",
+        placeholder: hasMessages ? "Reply..." : "Add your comment...",
       });
       replyInput.addEventListener("click", (e) => e.stopPropagation());
       replyInput.addEventListener("keydown", (e) => {
@@ -271,6 +283,12 @@ export class CommentThreadsView extends ItemView {
           replyInput.value = "";
         }
       });
+
+      // Auto-focus if this thread was just created
+      if (this.pendingFocusCommentId === commentId) {
+        this.pendingFocusCommentId = null;
+        setTimeout(() => replyInput.focus(), 0);
+      }
     }
   }
 
