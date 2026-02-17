@@ -333,15 +333,7 @@
 /* --- Selection tooltip --- */
 
 .ct-selection-tooltip {
-  position: fixed;
-  z-index: var(--layer-popover);
-  pointer-events: auto;
-  animation: ct-tooltip-fade-in 0.1s ease;
-}
-
-@keyframes ct-tooltip-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  padding: 0;
 }
 
 .ct-selection-tooltip-btn {
@@ -356,9 +348,8 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition: background 0.15s ease;
   white-space: nowrap;
+  transition: background 0.15s ease;
 }
 
 .ct-selection-tooltip-btn:hover {
