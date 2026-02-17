@@ -17,6 +17,7 @@ import {
 import { CommentThreadsSettingTab } from "./settings";
 import { EditorView } from "@codemirror/view";
 import { commentDecorationPlugin } from "./cm6/comment-decoration";
+import { selectionTooltipPlugin } from "./cm6/selection-tooltip";
 import { commentPostProcessor } from "./post-processor";
 import type { CommentThreadsSettings } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
@@ -46,6 +47,7 @@ export default class CommentThreadsPlugin extends Plugin {
 
     // Register CM6 extensions for live preview
     this.registerEditorExtension(commentDecorationPlugin);
+    this.registerEditorExtension(selectionTooltipPlugin);
     this.registerEditorExtension(
       EditorView.domEventHandlers({
         click: (event) => {
@@ -63,6 +65,14 @@ export default class CommentThreadsPlugin extends Plugin {
         },
       })
     );
+
+    // Listen for custom event from selection tooltip
+    this.registerDomEvent(document, "ct-create-comment" as keyof DocumentEventMap, () => {
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+      if (view) {
+        this.createComment(view.editor);
+      }
+    });
 
     // Register post-processor for reading view
     this.registerMarkdownPostProcessor((el, ctx) => {
