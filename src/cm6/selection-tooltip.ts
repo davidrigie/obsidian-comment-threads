@@ -1,59 +1,74 @@
-import { EditorState, StateField } from "@codemirror/state";
-import { showTooltip, Tooltip, EditorView } from "@codemirror/view";
+import {
+  EditorView,
+  PluginValue,
+  ViewPlugin,
+  ViewUpdate,
+} from "@codemirror/view";
 
-function getSelectionTooltip(state: EditorState): Tooltip | null {
-  const sel = state.selection.main;
-  if (sel.empty) return null;
+class SelectionTooltipPlugin implements PluginValue {
+  private tooltip: HTMLElement | null = null;
+  private view: EditorView;
 
-  return {
-    pos: sel.from,
-    above: true,
-    strictSide: true,
-    create() {
-      const dom = document.createElement("div");
-      dom.className = "ct-selection-tooltip";
+  constructor(view: EditorView) {
+    this.view = view;
+  }
 
-      const btn = document.createElement("button");
-      btn.className = "ct-selection-tooltip-btn";
-      btn.textContent = "💬 Comment";
-      btn.addEventListener("mousedown", (e) => {
+  update(update: ViewUpdate): void {
+    if (update.selectionSet || update.docChanged || update.geometryChanged) {
+      this.updateTooltip();
+    }
+  }
+
+  destroy(): void {
+    this.removeTooltip();
+  }
+
+  private updateTooltip(): void {
+    const sel = this.view.state.selection.main;
+
+    if (sel.empty) {
+      this.removeTooltip();
+      return;
+    }
+
+    const fromCoords = this.view.coordsAtPos(sel.from);
+    if (!fromCoords) {
+      this.removeTooltip();
+      return;
+    }
+
+    if (!this.tooltip) {
+      this.tooltip = document.createElement("div");
+      this.tooltip.className = "ct-selection-tooltip";
+      this.tooltip.innerHTML = `<button class="ct-selection-tooltip-btn">Comment</button>`;
+      this.tooltip.querySelector("button")!.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        dom.dispatchEvent(
+        this.view.dom.dispatchEvent(
           new CustomEvent("ct-create-comment", { bubbles: true })
         );
+        this.removeTooltip();
       });
+      this.view.dom.appendChild(this.tooltip);
+    }
 
-      dom.appendChild(btn);
-      return {
-        dom,
-        mount() {
-          // Walk up and strip border from all tooltip wrappers
-          let el: HTMLElement | null = dom.parentElement;
-          while (el && !el.classList.contains("cm-editor")) {
-            el.style.border = "none";
-            el.style.outline = "none";
-            el = el.parentElement;
-          }
-        },
-      };
-    },
-  };
+    // Position relative to the editor dom
+    const editorRect = this.view.dom.getBoundingClientRect();
+    const top = fromCoords.top - editorRect.top - 34;
+    const left = fromCoords.left - editorRect.left;
+
+    this.tooltip.style.top = `${top}px`;
+    this.tooltip.style.left = `${left}px`;
+  }
+
+  private removeTooltip(): void {
+    if (this.tooltip) {
+      this.tooltip.remove();
+      this.tooltip = null;
+    }
+  }
 }
 
-export const selectionTooltipField = StateField.define<Tooltip | null>({
-  create(state) {
-    return getSelectionTooltip(state);
-  },
-
-  update(value, tr) {
-    if (tr.selection || tr.docChanged) {
-      return getSelectionTooltip(tr.state);
-    }
-    return value;
-  },
-
-  provide(f) {
-    return showTooltip.from(f);
-  },
-});
+export const selectionTooltipPlugin = ViewPlugin.fromClass(
+  SelectionTooltipPlugin
+);

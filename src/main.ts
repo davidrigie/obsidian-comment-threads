@@ -17,7 +17,7 @@ import {
 import { CommentThreadsSettingTab } from "./settings";
 import { EditorView } from "@codemirror/view";
 import { commentDecorationPlugin } from "./cm6/comment-decoration";
-import { selectionTooltipField } from "./cm6/selection-tooltip";
+import { selectionTooltipPlugin } from "./cm6/selection-tooltip";
 import { commentPostProcessor } from "./post-processor";
 import type { CommentThreadsSettings } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
@@ -47,7 +47,7 @@ export default class CommentThreadsPlugin extends Plugin {
 
     // Register CM6 extensions for live preview
     this.registerEditorExtension(commentDecorationPlugin);
-    this.registerEditorExtension(selectionTooltipField);
+    this.registerEditorExtension(selectionTooltipPlugin);
     this.registerEditorExtension(
       EditorView.domEventHandlers({
         click: (event) => {
