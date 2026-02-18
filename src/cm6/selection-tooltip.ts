@@ -15,7 +15,8 @@ class SelectionTooltipPlugin implements PluginValue {
 
   update(update: ViewUpdate): void {
     if (update.selectionSet || update.docChanged || update.geometryChanged) {
-      this.updateTooltip();
+      // Defer layout read — coordsAtPos is not allowed during an update cycle
+      requestAnimationFrame(() => this.updateTooltip());
     }
   }
 

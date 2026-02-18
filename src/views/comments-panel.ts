@@ -191,53 +191,57 @@ export class CommentThreadsView extends ItemView {
     });
 
     const actions = headerRow.createDiv({ cls: "ct-thread-actions" });
+    const hasMessages = thread.thread.length > 0;
 
-    // Resolve/unresolve button
-    if (!thread.resolved) {
-      const resolveBtn = actions.createEl("button", {
-        cls: "ct-btn ct-btn-resolve",
-        title: "Resolve",
-        text: "✓",
+    // Only show resolve/delete once the thread has at least one message
+    if (hasMessages) {
+      // Resolve/unresolve button
+      if (!thread.resolved) {
+        const resolveBtn = actions.createEl("button", {
+          cls: "ct-btn ct-btn-resolve",
+          title: "Resolve",
+          text: "✓",
+        });
+        resolveBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.onResolveThread(commentId);
+        });
+      } else {
+        const unresolveBtn = actions.createEl("button", {
+          cls: "ct-btn ct-btn-unresolve",
+          title: "Unresolve",
+          text: "↩",
+        });
+        unresolveBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.store.unresolveThread(commentId);
+        });
+      }
+
+      // Delete button
+      const deleteBtn = actions.createEl("button", {
+        cls: "ct-btn ct-btn-delete",
+        title: "Delete",
+        text: "✕",
       });
-      resolveBtn.addEventListener("click", (e) => {
+      let deleteConfirmTimeout: number | null = null;
+      deleteBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        this.onResolveThread(commentId);
-      });
-    } else {
-      const unresolveBtn = actions.createEl("button", {
-        cls: "ct-btn ct-btn-unresolve",
-        title: "Unresolve",
-        text: "↩",
-      });
-      unresolveBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.store.unresolveThread(commentId);
+        if (deleteBtn.hasClass("ct-btn-confirm")) {
+          this.onDeleteThread(commentId);
+          if (deleteConfirmTimeout !== null) {
+            window.clearTimeout(deleteConfirmTimeout);
+          }
+        } else {
+          deleteBtn.addClass("ct-btn-confirm");
+          deleteBtn.textContent = "Confirm?";
+          deleteConfirmTimeout = window.setTimeout(() => {
+            deleteBtn.removeClass("ct-btn-confirm");
+            deleteBtn.textContent = "✕";
+          }, 3000);
+        }
       });
     }
-
-    // Delete button
-    const deleteBtn = actions.createEl("button", {
-      cls: "ct-btn ct-btn-delete",
-      title: "Delete",
-      text: "✕",
-    });
-    let deleteConfirmTimeout: number | null = null;
-    deleteBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (deleteBtn.hasClass("ct-btn-confirm")) {
-        this.onDeleteThread(commentId);
-        if (deleteConfirmTimeout !== null) {
-          window.clearTimeout(deleteConfirmTimeout);
-        }
-      } else {
-        deleteBtn.addClass("ct-btn-confirm");
-        deleteBtn.textContent = "Confirm?";
-        deleteConfirmTimeout = window.setTimeout(() => {
-          deleteBtn.removeClass("ct-btn-confirm");
-          deleteBtn.textContent = "✕";
-        }, 3000);
-      }
-    });
 
     // Quoted text (live from markers, or preserved anchorText)
     const quotedText = this.commentTexts[commentId] ?? thread.anchorText;
@@ -275,7 +279,6 @@ export class CommentThreadsView extends ItemView {
 
     // Comment input (first message or reply)
     if (!thread.resolved) {
-      const hasMessages = thread.thread.length > 0;
       const replyContainer = el.createDiv({ cls: "ct-reply" });
       const replyInput = replyContainer.createEl("input", {
         cls: "ct-reply-input",

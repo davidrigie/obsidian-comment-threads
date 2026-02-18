@@ -80,6 +80,26 @@ export default class CommentThreadsPlugin extends Plugin {
         this.setActiveComment(commentId);
         this.activatePanel();
       });
+
+      // Handle companion file navigation links
+      const allLinks = el.querySelectorAll("a");
+      for (const link of Array.from(allLinks)) {
+        const href = link.getAttribute("href") || "";
+        if (!href.includes("comment-threads")) continue;
+
+        const paramStr = href.split("?")[1] || "";
+        const params = new URLSearchParams(paramStr);
+        const filePath = params.get("file");
+        const commentId = params.get("comment");
+
+        link.removeAttribute("href");
+        link.addClass("ct-companion-link");
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.navigateToComment(filePath, commentId);
+        });
+      }
     });
 
     // Commands
@@ -143,11 +163,35 @@ export default class CommentThreadsPlugin extends Plugin {
       )
     );
 
-    // Load comments when a file opens
+    // Load comments when a file opens; lock companion files to reading view
     this.registerEvent(
       this.app.workspace.on("file-open", (file: TFile | null) => {
-        if (file && file.extension === "md" && !this.fileIO.isCommentsSidecar(file.path)) {
+        if (!file || file.extension !== "md") return;
+        if (file.path.endsWith(".comments.md")) {
+          const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+          if (view) {
+            const state = view.getState();
+            if (state.mode !== "preview") {
+              state.mode = "preview";
+              view.setState(state, { history: false });
+            }
+          }
+        } else {
           this.onFileOpen(file);
+        }
+      })
+    );
+
+    // Snap companion .comments.md files back to reading view if toggled
+    this.registerEvent(
+      this.app.workspace.on("layout-change", () => {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!view || !view.file) return;
+        if (!view.file.path.endsWith(".comments.md")) return;
+        const state = view.getState();
+        if (state.mode !== "preview") {
+          state.mode = "preview";
+          view.setState(state, { history: false });
         }
       })
     );
@@ -166,24 +210,9 @@ export default class CommentThreadsPlugin extends Plugin {
     );
 
     // Protocol handler for obsidian://comment-threads?file=...&comment=...
+    // (used when links are opened from outside Obsidian)
     this.registerObsidianProtocolHandler("comment-threads", async (params) => {
-      const filePath = params.file;
-      const commentId = params.comment;
-      if (!filePath) return;
-
-      const file = this.app.vault.getFileByPath(filePath);
-      if (!file) return;
-
-      const leaf = this.app.workspace.getLeaf(false);
-      await leaf.openFile(file);
-      this.currentFilePath = file.path;
-      await this.fileIO.loadComments(file.path);
-
-      if (commentId) {
-        this.scrollToComment(commentId);
-        this.setActiveComment(commentId);
-        this.activatePanel();
-      }
+      await this.navigateToComment(params.file, params.comment);
     });
 
     // Settings tab
@@ -220,6 +249,29 @@ export default class CommentThreadsPlugin extends Plugin {
 
   getAuthor(): string {
     return this.settings.authorName || "Anonymous";
+  }
+
+  // --- Comment navigation ---
+
+  private async navigateToComment(
+    filePath: string | null | undefined,
+    commentId: string | null | undefined
+  ): Promise<void> {
+    if (!filePath) return;
+
+    const file = this.app.vault.getFileByPath(filePath);
+    if (!file) return;
+
+    const leaf = this.app.workspace.getLeaf(false);
+    await leaf.openFile(file);
+    this.currentFilePath = file.path;
+    await this.fileIO.loadComments(file.path);
+
+    if (commentId) {
+      this.scrollToComment(commentId);
+      this.setActiveComment(commentId);
+      this.activatePanel();
+    }
   }
 
   // --- File handling ---
