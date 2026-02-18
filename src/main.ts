@@ -242,6 +242,7 @@ export default class CommentThreadsPlugin extends Plugin {
   }
 
   private saveTimeout: number | null = null;
+  private savePending = false;
 
   private debouncedSave(): void {
     if (this.saveTimeout !== null) {
@@ -253,7 +254,11 @@ export default class CommentThreadsPlugin extends Plugin {
   }
 
   private async saveCurrentComments(): Promise<void> {
-    if (!this.currentFilePath || this.saving) return;
+    if (!this.currentFilePath) return;
+    if (this.saving) {
+      this.savePending = true;
+      return;
+    }
     this.saving = true;
     try {
       await this.fileIO.saveComments(this.currentFilePath);
@@ -269,6 +274,10 @@ export default class CommentThreadsPlugin extends Plugin {
       }
     } finally {
       this.saving = false;
+      if (this.savePending) {
+        this.savePending = false;
+        this.debouncedSave();
+      }
     }
   }
 

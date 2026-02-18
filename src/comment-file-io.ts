@@ -1,4 +1,4 @@
-import { TFile, Vault } from "obsidian";
+import { Notice, TFile, Vault } from "obsidian";
 import type { CommentsFile } from "./types";
 import { CommentStore } from "./comment-store";
 import { buildCompanionMarkdown } from "./companion-builder";
@@ -40,11 +40,16 @@ export class CommentFileIO {
 
     if (hasComments) {
       const json = JSON.stringify(data, null, 2);
-      const existing = this.vault.getFileByPath(jsonPath);
-      if (existing) {
-        await this.vault.modify(existing, json);
-      } else {
-        await this.vault.create(jsonPath, json);
+      try {
+        const existing = this.vault.getFileByPath(jsonPath);
+        if (existing) {
+          await this.vault.modify(existing, json);
+        } else {
+          await this.vault.create(jsonPath, json);
+        }
+      } catch (e) {
+        console.error("Comment Threads: failed to save comments JSON", e);
+        new Notice("Comment Threads: failed to save comments file.");
       }
     } else {
       // No comments left — delete sidecar files
@@ -66,11 +71,16 @@ export class CommentFileIO {
     const fileName = mdPath.split("/").pop() || "document.md";
     const companion = buildCompanionMarkdown(fileName, data, mdPath);
 
-    const existing = this.vault.getFileByPath(companionPath);
-    if (existing) {
-      await this.vault.modify(existing, companion);
-    } else {
-      await this.vault.create(companionPath, companion);
+    try {
+      const existing = this.vault.getFileByPath(companionPath);
+      if (existing) {
+        await this.vault.modify(existing, companion);
+      } else {
+        await this.vault.create(companionPath, companion);
+      }
+    } catch (e) {
+      console.error("Comment Threads: failed to save companion file", e);
+      new Notice("Comment Threads: failed to save companion file.");
     }
   }
 
